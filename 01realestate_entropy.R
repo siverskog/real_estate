@@ -4,21 +4,7 @@
 ##### 2015-06-15
 ########################################################################################
 
-wd <- "C:\\Users\\Jonathan\\Dropbox\\Projekt Gazi\\06_Housing_Wavelet"
-setwd(wd)
 load("realestate.RData")
-
-#install.packages("entropy")
-#library(entropy)
-
-#install.packages("wavelets")
-#library(wavelets)
-
-#install.packages("wavethresh")
-#ibrary(wavethresh)
-
-#install.packages("wmtsa")
-#library(wmtsa)
 
 #install.packages("waveslim")
 library(waveslim)
@@ -53,145 +39,138 @@ min.ent <- function(y) {
 
 ### SETUP ###
 
-tmp <- ret
-max <- 8
-wav <- list(list(), list(), list(), list())
-entropy <- list(list(), list(), list(), list())
-min.entropy <- list()
+x <- data$ret$pt
+max <- 10
 
-### LOOP OVER SUB-SAMPLES ###
+wav <- list()
+entropy <- list()
 
-for(j in 1:length(tmp)) {
+### WAVELET TRANSFORM ###
+
+for(i in 1:ncol(x)) {
   
-  x <- tmp[[j]]
-  
-  ### WAVELET TRANSFORM ###
-  
-  for(i in 1:ncol(x)) {
-    
-    wav[[j]][[i]] <- modwt(x = x[,i], n.levels = max, wf = "la8", boundary = "periodic")
-    
-  }
-  
-  ### SHANNON ENTROPY ###
-  
-  for(i in 1:length(wav[[j]])) {
-    
-    entropy[[j]][[i]] <- unlist(lapply(wav[[j]][[i]], FUN = shannon))
-    
-  }
-  
-  ### MAKE TABLE ###
-  
-  raw <- unlist(apply(x, 2, FUN = shannon))
-  det <- do.call(cbind, entropy[[j]])
-  tab <- rbind(raw, det)
-  tab <- tab[-nrow(tab),]
-  min.entropy[[j]] <- apply(tab, 2, min.ent)
+  wav[[i]] <- modwt(x = x[,i], n.levels = max, wf = "la8", boundary = "periodic")
   
 }
 
-### FORMAT TABLE ###
+### SHANNON ENTROPY ###
 
-tab <- do.call(cbind, min.entropy)
-tab <- tab[,order(colnames(tab))]
-colnames(tab) <- rep(c("PT", "P1", "P2", "P3"),10)
+for(i in 1:length(wav)) {
+  
+  entropy[[i]] <- unlist(lapply(wav[[i]], FUN = shannon))
+  
+}
 
-tab4a <- tab[,1:20]
-tab4b <- tab[,21:40]
+### MAKE TABLE ###
 
-tab4a <- xtable(x = tab4a)
-align(tab4a) <- rep("l", ncol(tab4a)+1)
-digits(tab4a) <- rep(0, ncol(tab4a)+1)
-
-tab4b <- xtable(x = tab4b)
-align(tab4b) <- rep("l", ncol(tab4b)+1)
-digits(tab4b) <- rep(0, ncol(tab4b)+1)
-
-print.xtable(tab4a, file = "table04a_entropy_ret.tex", floating = FALSE, booktabs = TRUE)
-print.xtable(tab4b, file = "table04b_entropy_ret.tex", floating = FALSE, booktabs = TRUE)
+raw <- unlist(apply(x, 2, FUN = shannon))
+det <- do.call(cbind, entropy)
+tab_ret <- rbind(raw, det)
+tab_ret <- tab_ret[-nrow(tab_ret),]
+min_ret <- apply(tab_ret, 2, which.min)-1
+  
+tab <- list()
+tab$a<- apply(tab_ret, 2, min.ent)
 
 ########################################################################################
 ##### VOLATILITY #######################################################################
 
 ### SETUP ###
 
-tmp <- vol
-max <- 8
-wav <- list(list(), list(), list(), list())
-entropy <- list(list(), list(), list(), list())
-min.entropy <- list()
+x <- data$vol$pt
+max <- 10
 
-### LOOP OVER SUB-SAMPLES ###
+wav <- list()
+entropy <- list()
 
-for(j in 1:length(tmp)) {
+### WAVELET TRANSFORM ###
+
+for(i in 1:ncol(x)) {
   
-  x <- tmp[[j]]
+  wav[[i]] <- modwt(x = x[,i], n.levels = max, wf = "la8", boundary = "periodic")
   
-  ### WAVELET TRANSFORM ###
+}
+length(wav[[1]])
+
+### SHANNON ENTROPY ###
+
+for(i in 1:length(wav)) {
   
-  for(i in 1:ncol(x)) {
-    
-    wav[[j]][[i]] <- modwt(x = x[,i], n.levels = max, wf = "la8", boundary = "periodic")
-    
-  }
-  
-  ### SHANNON ENTROPY ###
-  
-  for(i in 1:length(wav[[j]])) {
-    
-    entropy[[j]][[i]] <- unlist(lapply(wav[[j]][[i]], FUN = shannon))
-    
-  }
-  
-  ### MAKE TABLE ###
-  
-  raw <- unlist(apply(x, 2, FUN = shannon))
-  det <- do.call(cbind, entropy[[j]])
-  tab <- rbind(raw, det)
-  tab <- tab[-nrow(tab),]
-  min.entropy[[j]] <- apply(tab, 2, min.ent)
+  entropy[[i]] <- unlist(lapply(wav[[i]], FUN = shannon))
   
 }
 
-### FORMAT TABLE ###
+### MAKE TABLE ###
 
-tab <- do.call(cbind, min.entropy)
-tab <- tab[,order(colnames(tab))]
-colnames(tab) <- rep(c("PT", "P1", "P2", "P3"),10)
+raw <- unlist(apply(x, 2, FUN = shannon))
+det <- do.call(cbind, entropy)
+tab_vol <- rbind(raw, det)
+tab_vol <- tab_vol[-nrow(tab_vol),]
+min_vol <- apply(tab_vol, 2, which.min)-1
 
-tab5a <- tab[,1:20]
-tab5b <- tab[,21:40]
+tab$b<- apply(tab_vol, 2, min.ent)
 
-tab5a <- xtable(x = tab5a)
-align(tab5a) <- rep("l", ncol(tab5a)+1)
-digits(tab5a) <- rep(0, ncol(tab5a)+1)
+rm(det, x, entropy, i, max, raw, wav)
 
-tab5b <- xtable(x = tab5b)
-align(tab5b) <- rep("l", ncol(tab5b)+1)
-digits(tab5b) <- rep(0, ncol(tab5b)+1)
+########################################################################################
+##### LATEX TABLE ######################################################################
+########################################################################################
 
-print.xtable(tab5a, file = "table05a_entropy_vol.tex", floating = FALSE, booktabs = TRUE)
-print.xtable(tab5b, file = "table05b_entropy_vol.tex", floating = FALSE, booktabs = TRUE)
+source("https://raw.githubusercontent.com/siverskog/latex_table/master/latex_table.R")
+
+names <- colnames(data$ret$pt)
+names[9:10] <- c("U.K.", "U.S.")
+
+h <- list()
+h$a <- header(list("RETURN", names), cmid = FALSE)
+h$b <- header(list("VOLATILITY", names), cmid = FALSE)
+
+min_ent <- latex.table(h, tab, 10)
+write(min_ent, file = "table03_entropy.tex")
+
+########################################################################################
+##### WAVELET TRANSFORM ################################################################
+########################################################################################
+
+wav <- list(list(), list())
+min_ent <- list(min_ret, min_vol)
+
+for(i in 1:length(data)) {
+  x <- data[[i]]$pt
+  for(j in 1:ncol(x)) {
+    wav[[i]][[j]] <- modwt(x = x[,i], n.levels = min_ent[[i]][j], wf = "la8", boundary = "periodic")
+  }
+}
 
 ########################################################################################
 ##### PLOT FUNCTION ####################################################################
 ########################################################################################
 
+.plot <- function(time, x, col = "deepskyblue3", main) {
+    
+    plot(time, x, type = "l", col = col, las = 1, ylab = NA, xlab = NA, xaxt = "n", main = main)
+    axis.Date(side = 1, at = seq(as.Date("2004-01-01"), as.Date("2016-01-01"), by = "2 years"))
+    axis.Date(side = 1, at = seq(as.Date("2004-01-01"), as.Date("2016-01-01"), by = "years"), labels = FALSE)
+    axis.Date(side = 1, at = seq(as.Date("2004-01-01"), as.Date("2016-06-01"), by = "quarters"), labels = FALSE, tck = -0.03)
+}
+
 plot.wav <- function(wav, raw, time, name = "plot.png", print = TRUE) {
   
-  if(print) { png(file = name, units = "mm", width = 247, height = 140, res = 300) }
+  if(print) { png(file = name, units = "mm", width = 247, height = 140, res = 600) }
   
   names <- c(paste(rep("D", length(wav)-1), 1:(length(wav)-1), sep = ""), paste("A", (length(wav)-1), sep = ""))
   
-  par(mar = c(2,3,2.5,1), mfrow = c(ceiling((length(wav)+1)/2),2))
+  par(mar = c(2,3,2,1), mfrow = c(ceiling((length(wav)+1)/2),2))
   
-  plot(time, raw, type = "l", las = 1, ylab = NA, xlab = NA, main = "RAW")
+  .plot(time, raw, main = "RAW", col = "blue")
   
   for(i in 1:length(wav)) {
     
-    plot(time, wav[[i]], type = "l", las = 1, ylab = NA, xlab = NA, main = names[i])
-    
+    if(i==length(wav)) {
+      .plot(time, wav[[i]], main = names[i], col = "darkorchid2")
+    } else {
+      .plot(time, wav[[i]], main = names[i], col = "deepskyblue3")
+    }
   }
   
   if(print) { dev.off() }
@@ -202,32 +181,20 @@ plot.wav <- function(wav, raw, time, name = "plot.png", print = TRUE) {
 ##### TEST #############################################################################
 ########################################################################################
 
-### US ###
+time <- as.Date(row.names(data$ret$pt))
+x <- wav[[1]][[10]]
+y <- data$ret$pt[,10]
 
-x <- ret[,1]
-time <- as.Date(row.names(ret))
+plot.wav(x, y, time, name = "figure02a_us.png")
 
-wav <- modwt(x = x, n.levels = 7, wf = "la8", boundary = "periodic")
-plot.wav(wav, x, time)
+x <- wav[[2]][[10]]
+y <- data$vol$pt[,10]
 
-### SHANNON ENTROPY ###
+plot.wav(x, y, time, name = "figure02b_us.png")
 
-unlist(lapply(wav, FUN = shannon))
+########################################################################################
+##### SAVE DATA ########################################################################
+########################################################################################
 
-### INVERSE ###
-
-y <- imodwt(wav)
-dev.off()
-plot(x, type = "l")
-points(y, type = "l", col = "red")
-
-y <- wav$s7+wav$d7+wav$d6+wav$d5+wav$d4+wav$d3+wav$d2+wav$d1
-cor(x,y)
-
-y <- do.call(cbind, wav)
-y <- apply(y,1,sum)
-
-test <- cbind(x,y)
-
-plot(x, type = "l")
-points(y, type = "l", col = "red")
+save(wav, file = "realestate_wav.RData")
+rm(list = ls())
