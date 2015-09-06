@@ -1,11 +1,13 @@
 ########################################################################################
 ##### REAL ESTATE PROJECT
-##### Jonathan Siverskog
-##### 2015-06-15
+##### By Jonathan Siverskog
+##### 2015-08-24
+#####
+##### PART 00: FORECAST
+#####
 ########################################################################################
 
-wd <- "C:\\Users\\Jonathan\\Dropbox\\Projekt Gazi\\06_Housing_Wavelet"
-setwd(wd)
+load("realestate_wav.RData")
 load("realestate.RData")
 
 #install.packages("forecast")
@@ -14,12 +16,88 @@ library(forecast)
 library(waveslim)
 #install.packages("nnet")
 library(nnet)
+source("C:\\Users\\Jonathan\\Dropbox\\Projekt Gazi\\waveANN.R")
 
 ########################################################################################
 ##### TEST #############################################################################
 ########################################################################################
 
-x <- ret$pt$AUSTRALIA # UNIVARIATE TIME SERIES TO TEST CODE
+### SLECT ONE DECOMPOSED SERIES FOR TESTING ###
+
+x <- wav[[1]][[1]]
+
+### PLOT ORIGINAL SERIES ###
+
+par(mar = c(2,3,2,1))
+plot(imodwt(x), type = "l", main = "Original Series", las = 1)
+
+### PLOT WAVELET TRANSFORM ###
+
+par(mar = c(2,3,2,1), mfrow = c(6,2))
+for(i in 1:length(x)) {
+  plot(x[[i]], type = "l", las = 1)
+}
+
+### ESTIMATE ANN FOR EACH LAYER ###
+
+fits <- list()
+for(i in 1: length(x)) {
+  print(i)
+  fits[[i]] <- nnetar(x[[i]], p = 2, size = 5, repeats = 10)
+}
+
+### FORECAST 5 STEPS AHEAD
+
+H <- 5
+f5 <- x
+
+for(i in 1:length(f5)) {
+  
+  print(i)
+  tmp <- forecast(fits[[i]], h = H)
+  f5[[i]][length(f5[[i]])+1:H] <- as.numeric(tmp$mean)
+  
+}
+
+### PLOT INVERSE OF EXTENDED SERIES TOGETHER WITH ORIGINAL SERIERS ###
+
+par(mar = c(2,3,2,1), mfrow = c(1,1))
+z <- imodwt(f5) 
+w <- imodwt(x)
+
+plot(z[(length(z)-149-H):(length(z))], type = "l", col = "red")
+points(w[(length(w)-149):(length(w))], type = "l")
+
+### FORECAST 5 STEPS AHEAD
+
+H <- 64
+f64 <- x
+
+for(i in 1:length(f64)) {
+  
+  print(i)
+  tmp <- forecast(fits[[i]], h = H)
+  f64[[i]][length(f64[[i]])+1:H] <- as.numeric(tmp$mean)
+  
+}
+
+### PLOT INVERSE OF EXTENDED SERIES TOGETHER WITH ORIGINAL SERIERS ###
+
+par(mar = c(2,3,2,1), mfrow = c(1,1))
+z <- imodwt(f64) 
+w <- imodwt(x)
+
+plot(z[(length(z)-149-H):(length(z))], type = "l", col = "red")
+points(w[(length(w)-149):(length(w))], type = "l")
+
+plot(z, type = "l")
+points(w, type = "l", col = "red")
+
+########################################################################################
+##### TEST #############################################################################
+########################################################################################
+
+x <- data$ret$pt$AUSTRALIA # UNIVARIATE TIME SERIES TO TEST CODE
 H <- 5 # FORECAST HORIZON
 J <- 8 # LEVELS OF WAVELET TRANSFORM
 test.samp <- 10 # HOW MANY OBSERVATIONS WILL BE USED TO EVALUATE THE FORECASTS?
@@ -72,8 +150,12 @@ dm.test(fe_raw[,H], fe_wav[,H], h = H) # DM TEST FOR HORIZON = 5 (SHOULD ALSO BE
 ########################################################################################
 
 
+nnetar()
+
 y <- cbind(y1 = x, y2 = c(NA, x[-length(x)])) 
 formula <- y1 ~ y2
 
 ffann <- nnet(formula = formula, data = y, size = 5, na.action = "na.omit")
+
+waveANN()
 

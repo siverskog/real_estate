@@ -1,7 +1,10 @@
 ########################################################################################
 ##### REAL ESTATE PROJECT
-##### Jonathan Siverskog
-##### 2015-06-15
+##### By Jonathan Siverskog
+##### 2015-08-24
+#####
+##### PART 02: ENTROPY
+#####
 ########################################################################################
 
 load("realestate.RData")
@@ -138,7 +141,7 @@ min_ent <- list(min_ret, min_vol)
 for(i in 1:length(data)) {
   x <- data[[i]]$pt
   for(j in 1:ncol(x)) {
-    wav[[i]][[j]] <- modwt(x = x[,i], n.levels = min_ent[[i]][j], wf = "la8", boundary = "periodic")
+    wav[[i]][[j]] <- modwt(x = x[,j], n.levels = min_ent[[i]][j], wf = "la8", boundary = "periodic")
   }
 }
 
